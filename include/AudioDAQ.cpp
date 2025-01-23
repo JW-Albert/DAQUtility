@@ -9,7 +9,7 @@ static int handler(void* user, const char* section, const char* name, const char
 }
 
 // Filter sections of the INI data containing a specific keyword
-std::vector<std::string> AudioDAQfilterSections(
+std::vector<std::string> filterSections(
     const std::map<std::string, std::map<std::string, std::string>>& ini_data,
     const std::string& section_keyword) {
     std::vector<std::string> result;
@@ -99,7 +99,7 @@ void AudioDAQ::initDevices(const char* filename) {
         return;
     }
 
-    auto filtered_sections = AudioDAQfilterSections(ini_data, "AudioDAQ");
+    auto filtered_sections = filterSections(ini_data, "AudioDAQ");
 
     try {
         for (const auto& section : filtered_sections) {
