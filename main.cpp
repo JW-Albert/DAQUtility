@@ -28,18 +28,26 @@ int main ( void ) {
     // 用來儲存 INI 數據的 map
     map<string, map<string, string>> ini_data;
 
+    // 遍歷讀取所有 section 和 key-value
+    for (const string& section : reader.Sections()) {
+        for (const string& name : reader.GetKeys(section)) {
+            ini_data[section][name] = reader.Get(section, name, "");
+        }
+    }
+
     // 目標 section 與 key
     const string targetSection = "SaveUnit";
     const string targetKey = "second";
-    int SaveUnit = stoi(targetKey);
     
     // 讀取指定 section 和 key 的值
     if (ini_data.find(targetSection) != ini_data.end() &&
         ini_data[targetSection].find(targetKey) != ini_data[targetSection].end()) {
         string value = ini_data[targetSection][targetKey];
+        SaveUnit = stoi(value);
         cout << "[" << targetSection << "] " << targetKey << " = " << value << endl;
     } else {
         cerr << "Cannot find section: " << targetSection << " or key: " << targetKey << endl;
+        return 1;
     }
 
     // Initialize NiDAQHandler and AudioDAQ instances for data acquisition
@@ -107,6 +115,7 @@ int main ( void ) {
             if(NiDAQsaveCounter == SaveUnit) {
                 // Save data to CSV file
                 NiDAQcsv.saveToCSV();
+                NiDAQsaveCounter = 0;
             }
         }
 
@@ -129,6 +138,7 @@ int main ( void ) {
             if (AudioDAQsaveCounter == SaveUnit) {
                 // Save data to CSV file
                 AudioDAQcsv.saveToCSV();
+                AudioDAQsaveCounter = 0;
             }
         }
     }

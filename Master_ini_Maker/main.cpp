@@ -29,7 +29,7 @@ public:
         for (const auto& section : data) {
             file << "[" << section.first << "]\n";
             for (const auto& keyValue : section.second) {
-                file << keyValue.first << "=" << keyValue.second << "\n";
+                file << keyValue.first << " = " << keyValue.second << "\n";
             }
             file << "\n"; // Add a blank line between sections
         }

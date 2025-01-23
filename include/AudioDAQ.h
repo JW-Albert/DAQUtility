@@ -17,6 +17,8 @@ extern "C" {
 #include "./iniReader/ini.h"
 }
 
+using namespace std;
+
 class AudioDAQ {
 public:
     // Constructor: Initialize the AudioDAQ object
@@ -47,7 +49,7 @@ public:
     void stopCapture();
 
     // Retrieve the buffer containing the captured audio data
-    std::vector<double> getBuffer() const;
+    vector<double> getBuffer() const;
 
     // Get the total number of data blocks captured
     int getTimes() const;
@@ -65,13 +67,13 @@ private:
     snd_pcm_t* pcmHandle;                      // PCM handle for ALSA audio device
     snd_pcm_hw_params_t* hwParams;             // Hardware parameters for ALSA
     int choice;                                // Index of the selected device
-    std::vector<AudioDevice> devices;          // List of detected audio devices
-    std::string selectedDevice;                // Identifier for the selected device
-    std::vector<double> buffer;                // Buffer for storing captured audio data
+    vector<AudioDevice> devices;          // List of detected audio devices
+    string selectedDevice;                // Identifier for the selected device
+    vector<double> buffer;                // Buffer for storing captured audio data
     unsigned int sampleRate;                   // Sampling rate in Hz
     int times;                                 // Number of captured data blocks
-    std::atomic<bool> capturing;               // Flag indicating if capturing is active
-    std::thread captureThread;                 // Thread for capturing audio data
+    atomic<bool> capturing;               // Flag indicating if capturing is active
+    thread captureThread;                 // Thread for capturing audio data
 
     // Internal method for the capture loop
     void captureLoop();

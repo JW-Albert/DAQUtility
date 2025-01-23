@@ -7,7 +7,7 @@ LDFLAGS = -L./include/NiDAQmx/lib64/gcc -lnidaqmx -lasound
 SRCS = main.cpp include/NiDAQ.cpp include/CSVWriter.cpp \
        include/iniReader/INIReader.cpp include/iniReader/ini.c \
        include/AudioDAQ.cpp
-OBJS = $(SRCS:.cpp=.o) $(SRCS:.c=.o)
+OBJS = $(SRCS:.cpp=.o)
 
 # 最終目標執行檔
 TARGET = main
@@ -18,9 +18,6 @@ $(TARGET): $(OBJS)
 	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 %.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
-
-%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
