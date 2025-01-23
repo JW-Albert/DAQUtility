@@ -9,9 +9,9 @@
 #include <string>
 #include <cstring>
 #include <atomic>
-#include "./include/iniReader/INIReader.h"     // INI file reader
+#include "./include/iniReader/INIReader.h"
 extern "C" {
-#include "./include/iniReader/ini.h" // C-style INI parser
+#include "./include/iniReader/ini.h"
 }
 
 using namespace std;
@@ -25,13 +25,12 @@ int main ( void ) {
         return 1;
     }
 
-    // 用來儲存 INI 數據的 map
+    // A map used to store INI data.
     map<string, map<string, string>> ini_data;
 
-    vector<string> sections = {"SaveUnit"}; // 列出所有已知的 section
+    vector<string> sections = {"SaveUnit"};
     for (const string& section : sections) {
-        if (reader.HasSection(section)) { // 確保 section 存在
-            // 假設你已經知道所有可能的 key 名稱
+        if (reader.HasSection(section)) {
             vector<string> keys = {"second", "first"};
             for (const string& key : keys) {
                 if (reader.HasValue(section, key)) {
@@ -41,7 +40,7 @@ int main ( void ) {
         }
     }
 
-    // 目標 section 與 key
+    // Target section and key.
     const string targetSection = "SaveUnit";
     const string targetKey = "second";
     int SaveUnit = 0;
@@ -63,7 +62,6 @@ int main ( void ) {
     // Path to configuration files for hardware initialization
     const char* NiDAQconfigPath = "API/NiDAQ.ini";
     const char* AudioDAQconfigPath = "API/AudioDAQ.ini";
-    
 
     // Initialize DAQ task using configuration file
     TaskInfo info = niDaq.prepareTask(NiDAQconfigPath);
@@ -71,7 +69,12 @@ int main ( void ) {
 
     // Validate initialization, ensure sample rate and channel count are valid
     if (info.sampleRate <= 0 || info.numChannels <= 0) {
-        cerr << "Preparation failed, unable to initialize hardware." << endl;
+        cerr << "NiDAQ Preparation failed, unable to initialize hardware." << endl;
+        return 1; // Exit on initialization error
+    }
+
+    if (audioDaq.getSampleRate() <= 0) {
+        cerr << "AudioDAQ Initialization failed, unable to initialize hardware." << endl;
         return 1; // Exit on initialization error
     }
 
