@@ -8,7 +8,8 @@
 #include <vector>       // Used for std::vector
 #include <map>
 #include <string>
-#include "./NiDAQmx/include/NIDAQmx.h" // NI-DAQmx library header
+#include <cstring>
+#include "NIDAQmx.h" // NI-DAQmx library header
 #include "./iniReader/INIReader.h"     // INI file reader
 
 extern "C" {
@@ -37,12 +38,12 @@ private:
     TaskHandle taskHandle;              // Handle for the DAQ task
     int32 error;                        // Stores error codes
     char errBuff[2048];                 // Buffer for error messages
-    std::vector<float64> dataBuffer;    // Buffer to store acquired data
+    vector<double> dataBuffer;          // Buffer to store acquired data
     int bufferSize;                     // Size of the data buffer
     int sampleRate;                     // Sampling rate in Hz
     int numChannels;                    // Number of channels in the task
-    std::atomic<bool> running;          // Atomic flag for controlling the data read loop
-    std::thread readThread;             // Thread for handling data acquisition
+    atomic<bool> running;               // Atomic flag for controlling the data read loop
+    thread readThread;                  // Thread for handling data acquisition
     int32 read;                         // Number of samples read in the last read operation
     int readtimes;                      // Total number of read operations performed
 
@@ -56,7 +57,7 @@ public:
     int startTask();                            // Start the DAQ task
     int32 getRead();                            // Get the number of samples read in the last operation
     int getReadTimes();                         // Get the total number of read operations
-    float64* getDataBuffer();                   // Retrieve the pointer to the data buffer
+    double* getDataBuffer();                   // Retrieve the pointer to the data buffer
     int stopAndClearTask();                     // Stop the DAQ task and clear resources
 };
 

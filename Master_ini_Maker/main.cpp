@@ -50,7 +50,7 @@ int main(void) {
 
     // Save the selected device and sample rate to an INI file
     INIWriter writer("../API/Master.ini");
-    writer.setValue("Master", "second", std::to_string(second));
+    writer.setValue("SaveUnit", "second", std::to_string(second));
 
     writer.save();
     std::cout << "The ini file has been successfully updated!" << std::endl;

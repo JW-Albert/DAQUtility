@@ -1,17 +1,47 @@
 // main.cpp
-#include "NiDAQ.h"
-#include "AudioDAQ.h"
-#include "CSVWriter.h"
+#include "./include/NiDAQ.h"
+#include "./include/AudioDAQ.h"
+#include "./include/CSVWriter.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <vector>
 #include <string>
+#include <cstring>
 #include <atomic>
+#include "./include/iniReader/INIReader.h"     // INI file reader
+extern "C" {
+#include "./include/iniReader/ini.h" // C-style INI parser
+}
 
 using namespace std;
 
 int main ( void ) {
+    const string iniFilePath = "API/Master.ini";
+    INIReader reader(iniFilePath);
+
+    if (reader.ParseError() < 0) {
+        cerr << "Cannot load INI file: " << iniFilePath << endl;
+        return 1;
+    }
+
+    // 用來儲存 INI 數據的 map
+    map<string, map<string, string>> ini_data;
+
+    // 目標 section 與 key
+    const string targetSection = "SaveUnit";
+    const string targetKey = "second";
+    int SaveUnit = stoi(targetKey);
+    
+    // 讀取指定 section 和 key 的值
+    if (ini_data.find(targetSection) != ini_data.end() &&
+        ini_data[targetSection].find(targetKey) != ini_data[targetSection].end()) {
+        string value = ini_data[targetSection][targetKey];
+        cout << "[" << targetSection << "] " << targetKey << " = " << value << endl;
+    } else {
+        cerr << "Cannot find section: " << targetSection << " or key: " << targetKey << endl;
+    }
+
     // Initialize NiDAQHandler and AudioDAQ instances for data acquisition
     NiDAQHandler handler;
     AudioDAQ audioDaq;
@@ -33,10 +63,7 @@ int main ( void ) {
 
     // Initialize CSVWriter for logging data from NiDAQ and AudioDAQ
     CSVWriter NiDAQcsv(info.numChannels, "output/NiDAQ/");
-    NiDAQcsv.start();
-
     CSVWriter AudioDAQcsv(1, "output/AudioDAQ/");
-    AudioDAQcsv.start();
 
     // Start NiDAQ task and validate success
     if (handler.startTask() != 0) {
@@ -52,9 +79,11 @@ int main ( void ) {
     // Variables to track loop iterations and data updates
     int NiDAQTimer = 0;
     int NiDAQtmpTimer = 0; // Tracks last data read times for NiDAQ
+    int NiDAQsaveCounter = 0; // Counter for saving data to CSV
 
     int AudioDAQTimer = 0;
     int AudioDAQtmpTimer = 0; // Tracks last data read times for AudioDAQ
+    int AudioDAQsaveCounter = 0; // Counter for saving data to CSV
 
     while (true) {
         // Check if new data is available from NiDAQ
@@ -73,6 +102,12 @@ int main ( void ) {
 
             // Update read times
             NiDAQtmpTimer = NiDAQtmpTimes;
+            NiDAQsaveCounter++;
+
+            if(NiDAQsaveCounter == SaveUnit) {
+                // Save data to CSV file
+                NiDAQcsv.saveToCSV();
+            }
         }
 
         // Check if new data is available from AudioDAQ
@@ -89,15 +124,19 @@ int main ( void ) {
 
             // Update read times
             AudioDAQtmpTimer = AudioDAQtmpTimes;
+            AudioDAQsaveCounter++;
+
+            if (AudioDAQsaveCounter == SaveUnit) {
+                // Save data to CSV file
+                AudioDAQcsv.saveToCSV();
+            }
         }
     }
 
     // Stop and clean up all tasks and resources
     handler.stopAndClearTask();
-    NiDAQcsv.stop();
 
     audioDaq.stopCapture();
-    AudioDAQcsv.stop();
 
     return 0;
 }

@@ -18,7 +18,7 @@ static int handler(void* user, const char* section, const char* name, const char
 }
 
 // Filter sections by a specific keyword
-vector<string> filterSections(const map<string, map<string, string>>& ini_data, const string& section_keyword) {
+vector<string> NiDAQfilterSections(const map<string, map<string, string>>& ini_data, const string& section_keyword) {
     vector<string> result;
     for (const auto& section : ini_data) {
         if (section.first.find(section_keyword) != string::npos) {
@@ -30,7 +30,7 @@ vector<string> filterSections(const map<string, map<string, string>>& ini_data, 
 
 // Implementation of NiDAQHandler class
 NiDAQHandler::NiDAQHandler()
-    : taskHandle(0), error(0), running(false), sampleRate(0), numChannels(0), bufferSize(0), read(0), readtimes(0) {
+    : taskHandle(0), error(0), dataBuffer(0), bufferSize(0), sampleRate(0), numChannels(0), running(false), read(0), readtimes(0) {
     memset(errBuff, 0, sizeof(errBuff));
 }
 
@@ -60,7 +60,7 @@ TaskInfo NiDAQHandler::prepareTask(const char* filename) {
     }
 
     // Filter sections related to DAQ channels
-    vector<string> filtered_sections = filterSections(ini_data, "DAQmxChannel");
+    vector<string> filtered_sections = NiDAQfilterSections(ini_data, "DAQmxChannel");
 
     try {
         // Create a task handle
@@ -93,7 +93,7 @@ TaskInfo NiDAQHandler::prepareTask(const char* filename) {
         cout << "Channels created successfully." << endl;
 
         // Configure task timing
-        vector<string> task_sections = filterSections(ini_data, "DAQmxTask");
+        vector<string> task_sections = NiDAQfilterSections(ini_data, "DAQmxTask");
         if (!task_sections.empty()) {
             string task_section = task_sections[0];
             sampleRate = static_cast<int>(stod(ini_data[task_section]["SampClk.Rate"]));
