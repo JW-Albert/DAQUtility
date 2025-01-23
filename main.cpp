@@ -25,22 +25,28 @@ int main ( void ) {
         return 1;
     }
 
-    // ç”¨ä¾†å„²å­˜ INI æ•¸æ“šçš„ map
+    // ¥Î¨ÓÀx¦s INI ¼Æ¾Úªº map
     map<string, map<string, string>> ini_data;
 
-    // éæ­·è®€å–æ‰€æœ‰ section å’Œ key-value
-    for (const string& section : reader.Sections()) {
-        for (const string& name : reader.GetKeys(section)) {
-            ini_data[section][name] = reader.Get(section, name, "");
+    vector<string> sections = {"SaveUnit"}; // ¦C¥X©Ò¦³¤wª¾ªº section
+    for (const string& section : sections) {
+        if (reader.HasSection(section)) { // ½T«O section ¦s¦b
+            // °²³]§A¤w¸gª¾¹D©Ò¦³¥i¯àªº key ¦WºÙ
+            vector<string> keys = {"second", "first"};
+            for (const string& key : keys) {
+                if (reader.HasValue(section, key)) {
+                    ini_data[section][key] = reader.Get(section, key, "");
+                }
+            }
         }
     }
 
-    // ç›®æ¨™ section èˆ‡ key
+    // ¥Ø¼Ğ section »P key
     const string targetSection = "SaveUnit";
     const string targetKey = "second";
-    
-    // è®€å–æŒ‡å®š section å’Œ key çš„å€¼
-    if (ini_data.find(targetSection) != ini_data.end() &&
+    int SaveUnit = 0;
+
+     if (ini_data.find(targetSection) != ini_data.end() &&
         ini_data[targetSection].find(targetKey) != ini_data[targetSection].end()) {
         string value = ini_data[targetSection][targetKey];
         SaveUnit = stoi(value);
