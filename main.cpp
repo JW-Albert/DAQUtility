@@ -57,7 +57,7 @@ int main ( void ) {
     }
 
     // Initialize NiDAQHandler and AudioDAQ instances for data acquisition
-    NiDAQHandler handler;
+    NiDAQHandler niDaq;
     AudioDAQ audioDaq;
 
     // Path to configuration files for hardware initialization
@@ -66,7 +66,7 @@ int main ( void ) {
     
 
     // Initialize DAQ task using configuration file
-    TaskInfo info = handler.prepareTask(NiDAQconfigPath);
+    TaskInfo info = niDaq.prepareTask(NiDAQconfigPath);
     audioDaq.initDevices(AudioDAQconfigPath);
 
     // Validate initialization, ensure sample rate and channel count are valid
@@ -80,7 +80,7 @@ int main ( void ) {
     CSVWriter AudioDAQcsv(1, "output/AudioDAQ/");
 
     // Start NiDAQ task and validate success
-    if (handler.startTask() != 0) {
+    if (niDaq.startTask() != 0) {
         cerr << "Failed to start NiDAQ task." << endl;
         return 1; // Exit if task start fails
     }
@@ -101,10 +101,10 @@ int main ( void ) {
 
     while (true) {
         // Check if new data is available from NiDAQ
-        int NiDAQtmpTimes = handler.getReadTimes();
+        int NiDAQtmpTimes = niDaq.getReadTimes();
         if (NiDAQtmpTimes > NiDAQtmpTimer) {
             // Retrieve the latest data buffer from NiDAQ
-            double* dataBuffer = handler.getDataBuffer();
+            double* dataBuffer = niDaq.getDataBuffer();
 
             NiDAQTimer++;
             cout << "NiDAQ Program Count: " << NiDAQTimer << endl;
@@ -150,8 +150,7 @@ int main ( void ) {
     }
 
     // Stop and clean up all tasks and resources
-    handler.stopAndClearTask();
-
+    niDaq.stopAndClearTask();
     audioDaq.stopCapture();
 
     return 0;
