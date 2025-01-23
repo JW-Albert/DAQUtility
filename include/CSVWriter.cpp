@@ -57,7 +57,7 @@ void CSVWriter::saveToCSV() {
 void CSVWriter::stop() {
     lock_guard<mutex> lock(queueMutex);
     while (!dataQueue.empty()) {
-        dataQueue.pop(); // 清空數據佇列
+        dataQueue.pop(); // Clear the data queue.
     }
     cout << "CSVWriter resources have been cleaned up." << endl;
 }
