@@ -5,16 +5,56 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <cstring>
 #include <atomic>
+#include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <filesystem>
 #include "./include/iniReader/INIReader.h"
 extern "C" {
 #include "./include/iniReader/ini.h"
 }
 
 using namespace std;
+namespace fs = filesystem;
+
+// 設置非阻塞模式和禁用回顯
+void setNonBlockingMode() {
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag &= ~(ICANON | ECHO); // 禁用行緩衝 & 禁用回顯
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+
+    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK); // 設置非阻塞模式
+}
+
+// 還原終端屬性
+void resetTerminalMode() {
+    struct termios tty;
+    tcgetattr(STDIN_FILENO, &tty);
+    tty.c_lflag |= (ICANON | ECHO); // 啟用行緩衝 & 啟用回顯
+    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+}
+
+string getCurrentTime() {
+    auto now = chrono::system_clock::now();   // 取得現在時間
+    time_t now_time = chrono::system_clock::to_time_t(now); // 轉為 time_t
+
+    struct tm localTime;
+    localtime_r(&now_time, &localTime);  // 取得當地時間（Linux）
+
+    char buffer[20];
+    strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", &localTime);
+
+    return string(buffer);  // 回傳格式化後的時間字串
+}
 
 int main ( void ) {
     const string iniFilePath = "API/Master.ini";
@@ -86,10 +126,20 @@ int main ( void ) {
         return 1; // Exit on initialization error
     }
 
+readDataLoop:
+
+    string lable;
+    cout << "Please enter the label of the data: ";
+    cin >> lable;
+    string folder = getCurrentTime() + "_" + lable
+
     // Initialize CSVWriter for logging data from NiDAQ and AudioDAQ
-    CSVWriter NiDAQcsv(info.numChannels, "output/NiDAQ/");
-    CSVWriter audioDaq_1csv(1, "output/AudioDAQ_1/");
-    CSVWriter audioDaq_2csv(1, "output/AudioDAQ_2/");
+    fs::create_directory("output/NiDAQ/" + folder);
+    CSVWriter NiDAQcsv(info.numChannels, "output/NiDAQ/" + folder);
+    fs::create_directory("output/AudioDAQ_1/" + folder);
+    CSVWriter audioDaq_1csv(1, "output/AudioDAQ_1/" + folder);
+    fs::create_directory("output/AudioDAQ_2/" + folder);
+    CSVWriter audioDaq_2csv(1, "output/AudioDAQ_2/" + folder);
 
     // Start NiDAQ task and validate success
     if (niDaq.startTask() != 0) {
@@ -100,8 +150,6 @@ int main ( void ) {
     // Start audio data capture
     audioDaq_1.startCapture();
     audioDaq_2.startCapture();
-
-    cout << "Start reading data, press Ctrl+C to terminate the program." << endl;
 
     // Variables to track loop iterations and data updates
     int NiDAQTimer = 0;
@@ -116,7 +164,20 @@ int main ( void ) {
     int audioDaq_2tmpTimer = 0; // Tracks last data read times for AudioDAQ
     int audioDaq_2saveCounter = 0; // Counter for saving data to CSV
 
-    while (true) {
+    bool isRunning = true;
+    char ch;
+    cout << "Start reading data, press 'Q' or 'q' to terminate the program." << endl;
+
+    while (isRunning) {
+        setNonBlockingMode(); // 設置非阻塞模式
+        if (read(STDIN_FILENO, &ch, 1) > 0) { // 讀取一個字元
+            if (ch == 'Q' || ch == 'q') {
+                isRunning = false;
+                break; // 按下 'Q' 或 'q' 時退出迴圈
+            }
+            cout << "You pressed: " << ch << endl;
+        }
+
         // Check if new data is available from NiDAQ
         int NiDAQtmpTimes = niDaq.getReadTimes();
         if (NiDAQtmpTimes > NiDAQtmpTimer) {
@@ -188,11 +249,19 @@ int main ( void ) {
             }
         }
     }
+    resetTerminalMode(); // 還原終端屬性
 
     // Stop and clean up all tasks and resources
     niDaq.stopAndClearTask();
     audioDaq_1.stopCapture();
     audioDaq_2.stopCapture();
+
+    // Clean up CSVWriter resources
+    NiDAQcsv.stop();
+    audioDaq_1csv.stop();
+    audioDaq_2csv.stop();
+
+    goto readDataLoop;
 
     return 0;
 }
