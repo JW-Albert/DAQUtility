@@ -2,9 +2,10 @@
 #include "CSVWriter.h"
 
 // Constructor: Initialize the CSVWriter with the specified number of channels and output directory
-CSVWriter::CSVWriter(int numChannels, const string& outputDir)
-    : numChannels(numChannels), outputDir(outputDir) {
+CSVWriter::CSVWriter(int numChannels, const string& outputDir, const string& label)
+    : numChannels(numChannels), outputDir(outputDir), label(label) {
 }
+
 
 // Destructor: Ensure all resources and threads are properly cleaned up
 CSVWriter::~CSVWriter() {
@@ -78,8 +79,8 @@ string CSVWriter::generateFilename() {
 
     char buffer[64];
     // Format the timestamp as "YYYY_MM_DD_HH_MM_SS"
-    strftime(buffer, sizeof(buffer), "%Y_%m_%d_%H_%M_%S", &local_time);
-    snprintf(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), "_%03lld.csv", millis);
+    strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", &local_time);
+    snprintf(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), "_%03lld", millis);
 
-    return outputDir + buffer; // Return the full path for the CSV file
+    return outputDir + buffer + "_" + label + ".csv"; // Return the full path for the CSV file
 }
