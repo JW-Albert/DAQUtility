@@ -21,7 +21,7 @@ using namespace std;
 class CSVWriter {
 public:
     // Constructor: Initialize the CSVWriter with the number of channels and output directory
-    CSVWriter(int numChannels, const string& outputDir = "output/");
+    CSVWriter(int numChannels, const string& outputDir = "output/", , const string& label = "undefine");
 
     // Destructor: Clean up resources
     ~CSVWriter();
@@ -40,6 +40,7 @@ private:
     string outputDir;                          // Directory where CSV files are saved
     queue<vector<double>> dataQueue;           // Queue to hold data blocks for writing
     mutex queueMutex;                          // Mutex for synchronizing access to the queue
+    string label;							   // Label for the CSV file
 
     // Generate a unique filename for the CSV file based on the current timestamp
     string generateFilename();
