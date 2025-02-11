@@ -131,7 +131,7 @@ readDataLoop:
     string lable;
     cout << "Please enter the label of the data: ";
     cin >> lable;
-    string folder = getCurrentTime() + "_" + lable
+    string folder = getCurrentTime() + "_" + lable;
 
     // Initialize CSVWriter for logging data from NiDAQ and AudioDAQ
     fs::create_directory("output/NiDAQ/" + folder);
