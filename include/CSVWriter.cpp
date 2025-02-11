@@ -25,36 +25,51 @@ void CSVWriter::saveToCSV() {
 
 // 背景寫入執行緒函式
 void CSVWriter::writeToCSV() {
+    static mutex globalFileMutex;  // 全域 I/O 鎖
+    vector<vector<double>> bufferBatch;  // 暫存批量數據，減少 I/O 操作
+
     while (!stopThreads || !dataQueue.empty()) {
         unique_lock<mutex> lock(queueMutex);
         dataAvailable.wait(lock, [this] { return !dataQueue.empty() || stopThreads; });
 
         while (!dataQueue.empty()) {
-            vector<double> dataBlock = move(dataQueue.front());
+            bufferBatch.push_back(move(dataQueue.front()));
             dataQueue.pop();
-            lock.unlock();
+        }
+        lock.unlock();
 
+        if (!bufferBatch.empty()) {
             string filename = generateFilename();
-            ofstream file(filename, ios::app); // 使用 append 模式
-            if (!file.is_open()) {
-                cerr << "Failed to create file: " << filename << endl;
-                continue;
-            }
 
-            for (size_t i = 0; i < dataBlock.size(); i += numChannels) {
-                for (int j = 0; j < numChannels; ++j) {
-                    file << dataBlock[i + j];
-                    if (j < numChannels - 1) {
-                        file << ",";
+            {
+                lock_guard<mutex> fileLock(globalFileMutex);
+                ofstream file(filename, ios::app);
+                if (!file.is_open()) {
+                    cerr << "Failed to create file: " << filename << endl;
+                    continue;
+                }
+
+                for (const auto& dataBlock : bufferBatch) {
+                    for (size_t i = 0; i < dataBlock.size(); i += numChannels) {
+                        for (int j = 0; j < numChannels; ++j) {
+                            file << dataBlock[i + j];
+                            if (j < numChannels - 1) {
+                                file << ",";
+                            }
+                        }
+                        file << "\n";
                     }
                 }
-                file << "\n";
+
+                cout << "Batch file written: " << filename << endl;
             }
 
-            cout << "File written: " << filename << endl;
+            bufferBatch.clear();  // 清空緩衝區
         }
     }
 }
+
+
 
 // 啟動寫入執行緒
 void CSVWriter::start() {
