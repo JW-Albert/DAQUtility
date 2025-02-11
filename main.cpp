@@ -178,6 +178,14 @@ readDataLoop:
         if (read(STDIN_FILENO, &ch, 1) > 0) { // 讀取一個字元
             if (ch == 'Q' || ch == 'q') {
                 isRunning = false;
+                // 先要求存檔
+                cout << "Saving final data before exit..." << endl;
+                NiDAQcsv.saveToCSV();
+                audioDaq_1csv.saveToCSV();
+                audioDaq_2csv.saveToCSV();
+
+                // 等待寫入執行緒確保資料寫入完成
+                this_thread::sleep_for(chrono::seconds(2)); // 可根據實際需要調整等待時間
                 break; // 按下 'Q' 或 'q' 時退出迴圈
             }
             cout << "You pressed: " << ch << endl;
@@ -202,9 +210,9 @@ readDataLoop:
             NiDAQsaveCounter++;
 
             if(NiDAQsaveCounter == SaveUnit) {
+                NiDAQsaveCounter = 0;
                 // Save data to CSV file
                 NiDAQcsv.saveToCSV();
-                NiDAQsaveCounter = 0;
             }
         }
 
@@ -225,9 +233,9 @@ readDataLoop:
             audioDaq_1saveCounter++;
 
             if (audioDaq_1saveCounter == SaveUnit) {
+                audioDaq_1saveCounter = 0;
                 // Save data to CSV file
                 audioDaq_1csv.saveToCSV();
-                audioDaq_1saveCounter = 0;
             }
         }
 
@@ -248,22 +256,28 @@ readDataLoop:
             audioDaq_2saveCounter++;
 
             if (audioDaq_2saveCounter == SaveUnit) {
+                audioDaq_2saveCounter = 0;
                 // Save data to CSV file
                 audioDaq_2csv.saveToCSV();
-                audioDaq_2saveCounter = 0;
             }
         }
     }
     resetTerminalMode(); // 還原終端屬性
 
     // Stop and clean up all tasks and resources
+	cout << "NiDAQ stopAndClearTask" << endl;
     niDaq.stopAndClearTask();
+	cout << "audioDaq_1 stopCapture" << endl;
     audioDaq_1.stopCapture();
+	cout << "audioDaq_2 stopCapture" << endl;
     audioDaq_2.stopCapture();
 
     // Clean up CSVWriter resources
+	cout << "NiDAQcsv stop" << endl;
     NiDAQcsv.stop();
+	cout << "audioDaq_1csv stop" << endl;
     audioDaq_1csv.stop();
+	cout << "audioDaq_2csv stop" << endl;
     audioDaq_2csv.stop();
 
     goto readDataLoop;

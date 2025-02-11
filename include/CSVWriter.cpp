@@ -25,49 +25,43 @@ void CSVWriter::saveToCSV() {
 
 // 背景寫入執行緒函式
 void CSVWriter::writeToCSV() {
-    static mutex globalFileMutex;  // 全域 I/O 鎖
-    vector<vector<double>> bufferBatch;  // 暫存批量數據，減少 I/O 操作
-
-    while (!stopThreads || !dataQueue.empty()) {
+    while (true) {
         unique_lock<mutex> lock(queueMutex);
-        dataAvailable.wait(lock, [this] { return !dataQueue.empty() || stopThreads; });
+        dataAvailable.wait(lock, [this] { return !dataQueue.empty() || stopThreads.load(); });
+
+        // 即使 stopThreads 為 true，仍然要確保 dataQueue 被寫完
+        if (dataQueue.empty() && stopThreads.load()) {
+            break; // 確保寫完後才退出
+        }
 
         while (!dataQueue.empty()) {
-            bufferBatch.push_back(move(dataQueue.front()));
+            vector<double> dataBlock = move(dataQueue.front());
             dataQueue.pop();
-        }
-        lock.unlock();
+            lock.unlock();
 
-        if (!bufferBatch.empty()) {
             string filename = generateFilename();
-
-            {
-                lock_guard<mutex> fileLock(globalFileMutex);
-                ofstream file(filename, ios::app);
-                if (!file.is_open()) {
-                    cerr << "Failed to create file: " << filename << endl;
-                    continue;
-                }
-
-                for (const auto& dataBlock : bufferBatch) {
-                    for (size_t i = 0; i < dataBlock.size(); i += numChannels) {
-                        for (int j = 0; j < numChannels; ++j) {
-                            file << dataBlock[i + j];
-                            if (j < numChannels - 1) {
-                                file << ",";
-                            }
-                        }
-                        file << "\n";
-                    }
-                }
-
-                cout << "Batch file written: " << filename << endl;
+            ofstream file(filename, ios::app);
+            if (!file.is_open()) {
+                cerr << "Failed to create file: " << filename << endl;
+                continue;
             }
 
-            bufferBatch.clear();  // 清空緩衝區
+            for (size_t i = 0; i < dataBlock.size(); i += numChannels) {
+                for (int j = 0; j < numChannels; ++j) {
+                    file << dataBlock[i + j];
+                    if (j < numChannels - 1) {
+                        file << ",";
+                    }
+                }
+                file << "\n";
+            }
+
+            cout << "File written: " << filename << endl;
         }
     }
+    cout << "CSVWriter thread exited after final save." << endl;
 }
+
 
 
 
@@ -78,12 +72,24 @@ void CSVWriter::start() {
 }
 
 void CSVWriter::stop() {
+    if (stopThreads.exchange(true)) {  // 確保只執行一次
+        return;
+    }
+
+    dataAvailable.notify_all(); // 通知執行緒結束
+
+    if (writerThread.joinable()) {
+        writerThread.join();
+    }
+
     lock_guard<mutex> lock(queueMutex);
     while (!dataQueue.empty()) {
-        dataQueue.pop(); // Clear the data queue.
+        dataQueue.pop(); // 清空佇列
     }
+
     cout << "CSVWriter resources have been cleaned up." << endl;
 }
+
 
 // Generate a unique filename based on the current timestamp
 string CSVWriter::generateFilename() {
