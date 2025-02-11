@@ -21,7 +21,7 @@ using namespace std;
 class CSVWriter {
 public:
     // Constructor: Initialize the CSVWriter with the number of channels and output directory
-    CSVWriter(int numChannels, const string& outputDir = "output/", , const string& label = "undefine");
+    CSVWriter(int numChannels, const string& outputDir = "output/", const string& label = "undefine");
 
     // Destructor: Clean up resources
     ~CSVWriter();

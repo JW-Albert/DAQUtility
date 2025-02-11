@@ -60,7 +60,7 @@ TaskInfo NiDAQHandler::prepareTask(const char* filename) {
     }
 
     // Filter sections related to DAQ channels
-    vector<string> filtered_sections = filterSections(ini_data, "DAQmxChannel");
+    vector<string> filtered_sections = NiDAQfilterSections(ini_data, "DAQmxChannel");
 
     try {
         // Create a task handle
@@ -93,7 +93,7 @@ TaskInfo NiDAQHandler::prepareTask(const char* filename) {
         cout << "Channels created successfully." << endl;
 
         // Configure task timing
-        vector<string> task_sections = filterSections(ini_data, "DAQmxTask");
+        vector<string> task_sections = NiDAQfilterSections(ini_data, "DAQmxTask");
         if (!task_sections.empty()) {
             string task_section = task_sections[0];
             sampleRate = static_cast<int>(stod(ini_data[task_section]["SampClk.Rate"]));

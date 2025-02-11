@@ -135,11 +135,11 @@ readDataLoop:
 
     // Initialize CSVWriter for logging data from NiDAQ and AudioDAQ
     fs::create_directory("output/NiDAQ/" + folder);
-    CSVWriter NiDAQcsv(info.numChannels, "output/NiDAQ/" + folder);
+    CSVWriter NiDAQcsv(info.numChannels, "output/NiDAQ/" + folder , lable);
     fs::create_directory("output/AudioDAQ_1/" + folder);
-    CSVWriter audioDaq_1csv(1, "output/AudioDAQ_1/" + folder);
+    CSVWriter audioDaq_1csv(1, "output/AudioDAQ_1/" + folder , lable);
     fs::create_directory("output/AudioDAQ_2/" + folder);
-    CSVWriter audioDaq_2csv(1, "output/AudioDAQ_2/" + folder);
+    CSVWriter audioDaq_2csv(1, "output/AudioDAQ_2/" + folder , lable);
 
     // Start NiDAQ task and validate success
     if (niDaq.startTask() != 0) {
