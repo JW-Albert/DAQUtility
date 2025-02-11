@@ -14,45 +14,52 @@ CSVWriter::~CSVWriter() {
 
 // Add a block of data to the queue for writing to CSV
 void CSVWriter::addDataBlock(vector<double>&& dataBlock) {
-    lock_guard<mutex> lock(queueMutex); // Lock the queue while modifying
-    dataQueue.push(move(dataBlock));   // Move the data into the queue
+    lock_guard<mutex> lock(queueMutex);
+    dataQueue.push(move(dataBlock));
 }
 
 // Write all queued data blocks to a single CSV file
 void CSVWriter::saveToCSV() {
-    lock_guard<mutex> lock(queueMutex); // Lock the queue while accessing
+    dataAvailable.notify_one();
+}
 
-    if (dataQueue.empty()) {
-        cout << "No data to save." << endl;
-        return;
-    }
+// 背景寫入執行緒函式
+void CSVWriter::writeToCSV() {
+    while (!stopThreads || !dataQueue.empty()) {
+        unique_lock<mutex> lock(queueMutex);
+        dataAvailable.wait(lock, [this] { return !dataQueue.empty() || stopThreads; });
 
-    // Generate a filename for the new CSV file
-    string filename = generateFilename();
-    ofstream file(filename);
-    if (!file.is_open()) {
-        cerr << "Failed to create file: " << filename << endl;
-        return;
-    }
+        while (!dataQueue.empty()) {
+            vector<double> dataBlock = move(dataQueue.front());
+            dataQueue.pop();
+            lock.unlock();
 
-    // Write all data blocks to the CSV file
-    while (!dataQueue.empty()) {
-        vector<double> dataBlock = move(dataQueue.front());
-        dataQueue.pop();
-
-        // Write data to the file
-        for (size_t i = 0; i < dataBlock.size(); i += numChannels) {
-            for (int j = 0; j < numChannels; ++j) {
-                file << dataBlock[i + j];
-                if (j < numChannels - 1) {
-                    file << ","; // Separate columns with commas
-                }
+            string filename = generateFilename();
+            ofstream file(filename, ios::app); // 使用 append 模式
+            if (!file.is_open()) {
+                cerr << "Failed to create file: " << filename << endl;
+                continue;
             }
-            file << "\n"; // Newline after each row
+
+            for (size_t i = 0; i < dataBlock.size(); i += numChannels) {
+                for (int j = 0; j < numChannels; ++j) {
+                    file << dataBlock[i + j];
+                    if (j < numChannels - 1) {
+                        file << ",";
+                    }
+                }
+                file << "\n";
+            }
+
+            cout << "File written: " << filename << endl;
         }
     }
+}
 
-    cout << "File written: " << filename << endl;
+// 啟動寫入執行緒
+void CSVWriter::start() {
+    stopThreads = false;
+    writerThread = thread(&CSVWriter::writeToCSV, this);
 }
 
 void CSVWriter::stop() {

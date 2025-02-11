@@ -164,6 +164,11 @@ readDataLoop:
     int audioDaq_2tmpTimer = 0; // Tracks last data read times for AudioDAQ
     int audioDaq_2saveCounter = 0; // Counter for saving data to CSV
 
+    // ±Ò°Ê CSVWriter ªº­I´º°õ¦æºü
+    NiDAQcsv.start();
+    audioDaq_1csv.start();
+    audioDaq_2csv.start();
+
     bool isRunning = true;
     char ch;
     cout << "Start reading data, press 'Q' or 'q' to terminate the program." << endl;

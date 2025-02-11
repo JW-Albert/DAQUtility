@@ -35,12 +35,20 @@ public:
     // Stop the CSVWriter and clear the data queue
     void stop();
 
+	// Start the CSVWriter thread
+	void start();
+
 private:
     int numChannels;                           // Number of channels in the data
     string outputDir;                          // Directory where CSV files are saved
     queue<vector<double>> dataQueue;           // Queue to hold data blocks for writing
     mutex queueMutex;                          // Mutex for synchronizing access to the queue
     string label;							   // Label for the CSV file
+    condition_variable dataAvailable;
+    atomic<bool> stopThreads;
+    thread writerThread; // ­I´º¼g¤J°õ¦æºü
+
+    void writeToCSV(); // ­I´º¼g¤J¨ç¦¡
 
     // Generate a unique filename for the CSV file based on the current timestamp
     string generateFilename();
