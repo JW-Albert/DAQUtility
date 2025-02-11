@@ -24,36 +24,36 @@ extern "C" {
 using namespace std;
 namespace fs = filesystem;
 
-// ³]¸m«Dªı¶ë¼Ò¦¡©M¸T¥Î¦^Åã
+// è¨­ç½®éé˜»å¡æ¨¡å¼å’Œç¦ç”¨å›é¡¯
 void setNonBlockingMode() {
     struct termios tty;
     tcgetattr(STDIN_FILENO, &tty);
-    tty.c_lflag &= ~(ICANON | ECHO); // ¸T¥Î¦æ½w½Ä & ¸T¥Î¦^Åã
+    tty.c_lflag &= ~(ICANON | ECHO); // ç¦ç”¨è¡Œç·©è¡ & ç¦ç”¨å›é¡¯
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 
     int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK); // ³]¸m«Dªı¶ë¼Ò¦¡
+    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK); // è¨­ç½®éé˜»å¡æ¨¡å¼
 }
 
-// ÁÙ­ì²×ºİÄİ©Ê
+// é‚„åŸçµ‚ç«¯å±¬æ€§
 void resetTerminalMode() {
     struct termios tty;
     tcgetattr(STDIN_FILENO, &tty);
-    tty.c_lflag |= (ICANON | ECHO); // ±Ò¥Î¦æ½w½Ä & ±Ò¥Î¦^Åã
+    tty.c_lflag |= (ICANON | ECHO); // å•Ÿç”¨è¡Œç·©è¡ & å•Ÿç”¨å›é¡¯
     tcsetattr(STDIN_FILENO, TCSANOW, &tty);
 }
 
 string getCurrentTime() {
-    auto now = chrono::system_clock::now();   // ¨ú±o²{¦b®É¶¡
-    time_t now_time = chrono::system_clock::to_time_t(now); // Âà¬° time_t
+    auto now = chrono::system_clock::now();   // å–å¾—ç¾åœ¨æ™‚é–“
+    time_t now_time = chrono::system_clock::to_time_t(now); // è½‰ç‚º time_t
 
     struct tm localTime;
-    localtime_r(&now_time, &localTime);  // ¨ú±o·í¦a®É¶¡¡]Linux¡^
+    localtime_r(&now_time, &localTime);  // å–å¾—ç•¶åœ°æ™‚é–“ï¼ˆLinuxï¼‰
 
     char buffer[20];
     strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", &localTime);
 
-    return string(buffer);  // ¦^¶Ç®æ¦¡¤Æ«áªº®É¶¡¦r¦ê
+    return string(buffer);  // å›å‚³æ ¼å¼åŒ–å¾Œçš„æ™‚é–“å­—ä¸²
 }
 
 int main ( void ) {
@@ -131,7 +131,7 @@ readDataLoop:
     string lable;
     cout << "Please enter the label of the data: ";
     cin >> lable;
-    string folder = getCurrentTime() + "_" + lable
+    string folder = getCurrentTime() + "_" + lable;
 
     // Initialize CSVWriter for logging data from NiDAQ and AudioDAQ
     fs::create_directory("output/NiDAQ/" + folder);
@@ -169,11 +169,11 @@ readDataLoop:
     cout << "Start reading data, press 'Q' or 'q' to terminate the program." << endl;
 
     while (isRunning) {
-        setNonBlockingMode(); // ³]¸m«Dªı¶ë¼Ò¦¡
-        if (read(STDIN_FILENO, &ch, 1) > 0) { // Åª¨ú¤@­Ó¦r¤¸
+        setNonBlockingMode(); // è¨­ç½®éé˜»å¡æ¨¡å¼
+        if (read(STDIN_FILENO, &ch, 1) > 0) { // è®€å–ä¸€å€‹å­—å…ƒ
             if (ch == 'Q' || ch == 'q') {
                 isRunning = false;
-                break; // «ö¤U 'Q' ©Î 'q' ®É°h¥X°j°é
+                break; // æŒ‰ä¸‹ 'Q' æˆ– 'q' æ™‚é€€å‡ºè¿´åœˆ
             }
             cout << "You pressed: " << ch << endl;
         }
@@ -249,7 +249,7 @@ readDataLoop:
             }
         }
     }
-    resetTerminalMode(); // ÁÙ­ì²×ºİÄİ©Ê
+    resetTerminalMode(); // é‚„åŸçµ‚ç«¯å±¬æ€§
 
     // Stop and clean up all tasks and resources
     niDaq.stopAndClearTask();
