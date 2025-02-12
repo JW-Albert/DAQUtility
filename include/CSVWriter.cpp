@@ -1,86 +1,53 @@
-// CSVWriter.cpp
 #include "CSVWriter.h"
 
-// Constructor: Initialize the CSVWriter with the specified number of channels and output directory
+// Constructor: Initializes the CSVWriter and generates the first CSV filename.
 CSVWriter::CSVWriter(int numChannels, const string& outputDir, const string& label)
     : numChannels(numChannels), outputDir(outputDir), label(label) {
+    currentFilename = generateFilename(); // Generate initial filename
 }
 
-
-// Destructor: Ensure all resources and threads are properly cleaned up
-CSVWriter::~CSVWriter() {
-    stop();
-}
-
-// Add a block of data to the queue for writing to CSV
+// Writes incoming data to the file immediately.
 void CSVWriter::addDataBlock(vector<double>&& dataBlock) {
-    lock_guard<mutex> lock(queueMutex); // Lock the queue while modifying
-    dataQueue.push(move(dataBlock));   // Move the data into the queue
-}
-
-// Write all queued data blocks to a single CSV file
-void CSVWriter::saveToCSV() {
-    lock_guard<mutex> lock(queueMutex); // Lock the queue while accessing
-
-    if (dataQueue.empty()) {
-        cout << "No data to save." << endl;
-        return;
-    }
-
-    // Generate a filename for the new CSV file
-    string filename = generateFilename();
-    ofstream file(filename);
+    lock_guard<mutex> lock(fileMutex); // Ensure thread safety
+    ofstream file(currentFilename, ios::app); // Open file in append mode
     if (!file.is_open()) {
-        cerr << "Failed to create file: " << filename << endl;
+        cerr << "Failed to open file: " << currentFilename << endl;
         return;
     }
 
-    // Write all data blocks to the CSV file
-    while (!dataQueue.empty()) {
-        vector<double> dataBlock = move(dataQueue.front());
-        dataQueue.pop();
-
-        // Write data to the file
-        for (size_t i = 0; i < dataBlock.size(); i += numChannels) {
-            for (int j = 0; j < numChannels; ++j) {
-                file << dataBlock[i + j];
-                if (j < numChannels - 1) {
-                    file << ","; // Separate columns with commas
-                }
+    // Write data to CSV file in rows, with values separated by commas.
+    for (size_t i = 0; i < dataBlock.size(); i += numChannels) {
+        for (int j = 0; j < numChannels; ++j) {
+            file << dataBlock[i + j];
+            if (j < numChannels - 1) {
+                file << ",";
             }
-            file << "\n"; // Newline after each row
         }
+        file << "\n";
     }
-
-    cout << "File written: " << filename << endl;
+    file.close();
 }
 
-void CSVWriter::stop() {
-    lock_guard<mutex> lock(queueMutex);
-    while (!dataQueue.empty()) {
-        dataQueue.pop(); // Clear the data queue.
-    }
-    cout << "CSVWriter resources have been cleaned up." << endl;
+// Updates the filename when a `SaveUnit` is reached.
+void CSVWriter::updateFilename() {
+    lock_guard<mutex> lock(fileMutex); // Ensure thread safety
+    currentFilename = generateFilename();
 }
 
-// Generate a unique filename based on the current timestamp
+// Generates a new CSV filename based on the current timestamp.
 string CSVWriter::generateFilename() {
     auto now = chrono::system_clock::now();
     time_t now_time = chrono::system_clock::to_time_t(now);
-    auto duration = now.time_since_epoch();
-    auto millis = chrono::duration_cast<chrono::milliseconds>(duration).count() % 1000;
     tm local_time;
 
 #ifdef _WIN32
-    localtime_s(&local_time, &now_time);
+    localtime_s(&local_time, &now_time); // Windows-specific function
 #else
-    localtime_r(&now_time, &local_time);
+    localtime_r(&now_time, &local_time); // POSIX function
 #endif
 
     char buffer[64];
-    // Format the timestamp as "YYYY_MM_DD_HH_MM_SS"
-    strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", &local_time);
-    snprintf(buffer + strlen(buffer), sizeof(buffer) - strlen(buffer), "_%03lld", millis);
+    strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", &local_time); // Format timestamp
 
-    return outputDir + buffer + "_" + label + ".csv"; // Return the full path for the CSV file
+    return outputDir + "/" + buffer + "_" + label + ".csv"; // Construct filename
 }
