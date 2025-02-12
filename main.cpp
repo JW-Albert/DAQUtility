@@ -45,7 +45,12 @@ void setNonBlockingMode() {
  * return to normal to avoid unexpected behavior in the shell.
  */
 void resetTerminalMode() {
-    tcsetattr(STDIN_FILENO, TCSANOW, &original_tty); // Restore the original terminal attributes
+    // Restore original terminal settings
+    tcsetattr(STDIN_FILENO, TCSANOW, &original_tty); 
+    
+    // Remove the O_NONBLOCK flag to restore blocking mode
+    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, flags & ~O_NONBLOCK);
 }
 
 /**
@@ -115,6 +120,8 @@ int main( void ) {
         cout << "Initialization completed." << endl;
 
         // Prompt user for label input
+        system("clear"); // Clear terminal screen for better readability
+        cout << "==================== Label Creat ==================" << endl;
         string label;
         cout << "Please enter the label of the data: ";
         cin >> label;
@@ -138,10 +145,15 @@ int main( void ) {
         audioDaq_1.startCapture();
         audioDaq_2.startCapture();
 
-        int NiDAQTimer = 0, NiDAQtmpTimer = 0;
-        int audioDaq_1Timer = 0, audioDaq_1tmpTimer = 0;
-        int audioDaq_2Timer = 0, audioDaq_2tmpTimer = 0;
+        // NomalTimer = times for saving data
+        // tmpTimer = times for package data
+        // proTimer = times for program data
+        int NiDAQTimer = 0, NiDAQtmpTimer = 0, NiDAQproTimer = 0;
+        int audioDaq_1Timer = 0, audioDaq_1tmpTimer = 0, audioDaq_1proTimer = 0;
+        int audioDaq_2Timer = 0, audioDaq_2tmpTimer = 0, audioDaq_2proTimer = 0;
 
+        system("clear"); // Clear terminal screen for better readability
+        cout << "==================== Data Acquisition Program ==================" << endl;
         bool isRunning = true;
         char ch;
         cout << "Start reading data, press 'Q' or 'q' to terminate the program." << endl;
@@ -169,7 +181,10 @@ int main( void ) {
                 NiDAQtmpTimer = NiDAQtmpTimes;
 
                 NiDAQTimer++;
-                cout << "NiDAQ Program Timer: " << NiDAQTimer << endl;
+                NiDAQproTimer++;
+                cout << "=========================================" << endl;
+                cout << "NiDAQ Saving Timer:  " << NiDAQTimer << endl;
+                cout << "NiDAQ Program Timer: " << NiDAQproTimer << endl;
                 cout << "NiDAQ Package Timer: " << NiDAQtmpTimer << endl;
                 
                 if (NiDAQTimer == SaveUnit) {
@@ -187,7 +202,9 @@ int main( void ) {
                 audioDaq_1tmpTimer = audioDaq_1tmpTimes;
 
                 audioDaq_1Timer++;
-                cout << "Audio 1 Program Timer: " << audioDaq_1Timer << endl;
+                audioDaq_1proTimer++;
+                cout << "Audio 1 Saving Timer:  " << audioDaq_1Timer << endl;
+                cout << "Audio 1 Program Timer: " << audioDaq_1proTimer << endl;
                 cout << "Audio 1 Package Timer: " << audioDaq_1tmpTimer << endl;
 
                 if (audioDaq_1Timer == SaveUnit) {
@@ -205,7 +222,9 @@ int main( void ) {
                 audioDaq_2tmpTimer = audioDaq_2tmpTimes;
 
                 audioDaq_2Timer++;
-                cout << "Audio 2 Program Timer: " << audioDaq_2Timer << endl;
+                audioDaq_2proTimer++;
+                cout << "Audio 2 Saving Timer:  " << audioDaq_2Timer << endl;
+                cout << "Audio 2 Program Timer: " << audioDaq_2proTimer << endl;
                 cout << "Audio 2 Package Timer: " << audioDaq_2tmpTimer << endl;
 
                 if (audioDaq_2Timer == SaveUnit) {
