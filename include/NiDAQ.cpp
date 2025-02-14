@@ -102,8 +102,6 @@ TaskInfo NiDAQHandler::prepareTask(const char* filename) {
             int sampPerChan = stoi(ini_data[task_section]["SampQuant.SampPerChan"]);
             numChannels = static_cast<int>(filtered_sections.size());
             bufferSize = sampPerChan * numChannels;
-            cout << "numChannels: " << numChannels << endl;
-            cout << "bufferSize: " << bufferSize << endl;
             tmpDataBuffer.resize(bufferSize ,0.0);
             dataBuffer.resize(bufferSize ,0.0);
 
