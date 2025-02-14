@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include <cstring>
+#include <mutex>
 #include "NIDAQmx.h" // NI-DAQmx library header
 #include "./iniReader/INIReader.h"     // INI file reader
 
@@ -38,6 +39,7 @@ private:
     TaskHandle taskHandle;              // Handle for the DAQ task
     int32 error;                        // Stores error codes
     char errBuff[2048];                 // Buffer for error messages
+    vector<double> tmpDataBuffer;       // Buffer to store acquired data
     vector<double> dataBuffer;          // Buffer to store acquired data
     int bufferSize;                     // Size of the data buffer
     int sampleRate;                     // Sampling rate in Hz
@@ -46,6 +48,7 @@ private:
     thread readThread;                  // Thread for handling data acquisition
     int32 read;                         // Number of samples read in the last read operation
     int readtimes;                      // Total number of read operations performed
+    std::mutex dataMutex;               // Mutex for protecting data access
 
     void readLoop();                    // Internal function for continuous data acquisition
 

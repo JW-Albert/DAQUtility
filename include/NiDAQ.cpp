@@ -1,4 +1,5 @@
 #include "NiDAQ.h"
+#include <fstream>
 
 // Center the text and pad it to a specified width
 string center(const std::string& text, int width) {
@@ -30,7 +31,7 @@ vector<string> NiDAQfilterSections(const map<string, map<string, string>>& ini_d
 
 // Implementation of NiDAQHandler class
 NiDAQHandler::NiDAQHandler()
-    : taskHandle(0), error(0), dataBuffer(0), bufferSize(0), sampleRate(0), numChannels(0), running(false), read(0), readtimes(0) {
+    : taskHandle(0), error(0), tmpDataBuffer(0), dataBuffer(0), bufferSize(0), sampleRate(0), numChannels(0), running(false), read(0), readtimes(0) {
     memset(errBuff, 0, sizeof(errBuff));
 }
 
@@ -96,13 +97,17 @@ TaskInfo NiDAQHandler::prepareTask(const char* filename) {
         vector<string> task_sections = NiDAQfilterSections(ini_data, "DAQmxTask");
         if (!task_sections.empty()) {
             string task_section = task_sections[0];
-            sampleRate = static_cast<int>(stod(ini_data[task_section]["SampClk.Rate"]));
+            double floarSampleRate = stod(ini_data[task_section]["SampClk.Rate"]);
+            sampleRate = static_cast<int>(floarSampleRate);
             int sampPerChan = stoi(ini_data[task_section]["SampQuant.SampPerChan"]);
             numChannels = static_cast<int>(filtered_sections.size());
-            bufferSize = sampleRate * numChannels;
-            dataBuffer.resize(bufferSize);
+            bufferSize = sampPerChan * numChannels;
+            cout << "numChannels: " << numChannels << endl;
+            cout << "bufferSize: " << bufferSize << endl;
+            tmpDataBuffer.resize(bufferSize ,0.0);
+            dataBuffer.resize(bufferSize ,0.0);
 
-            DAQmxErrChk(DAQmxCfgSampClkTiming(taskHandle, "", sampleRate, DAQmx_Val_Rising, DAQmx_Val_ContSamps, sampPerChan));
+            DAQmxErrChk(DAQmxCfgSampClkTiming(taskHandle, "", floarSampleRate, DAQmx_Val_Rising, DAQmx_Val_ContSamps, sampPerChan));
         }
 
         info.sampleRate = sampleRate;
@@ -163,12 +168,17 @@ void NiDAQHandler::readLoop() {
                 taskHandle,
                 sampleRate,
                 10.0,
-                DAQmx_Val_GroupByChannel,
-                dataBuffer.data(),
+                DAQmx_Val_GroupByScanNumber,
+                tmpDataBuffer.data(),
                 bufferSize,
                 &read,
                 NULL
             ));
+
+            {
+                std::lock_guard<std::mutex> lock(dataMutex);
+                std::swap(tmpDataBuffer, dataBuffer);
+            }
         }
         catch (...) {
             cerr << "Error occurred while reading data." << endl;
@@ -187,6 +197,7 @@ Error:
 
 // Return a pointer to the data buffer
 float64* NiDAQHandler::getDataBuffer() {
+    std::lock_guard<std::mutex> lock(dataMutex);
     return dataBuffer.data();
 }
 
