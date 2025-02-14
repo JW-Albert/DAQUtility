@@ -1,5 +1,4 @@
 #include "NiDAQ.h"
-#include <fstream>
 
 // Center the text and pad it to a specified width
 string center(const std::string& text, int width) {
